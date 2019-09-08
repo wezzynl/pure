@@ -165,7 +165,7 @@ _async_worker() {
 		case $request in
 			_unset_trap)  notify_parent=0; continue;;
 			_killjobs)    killjobs; continue;;
-			_async_eval*) do_eval=1;;
+			_async_eval*) do_eval=1; continue;;
 		esac
 
 		# Parse the request using shell parsing (z) to allow commands
@@ -176,7 +176,7 @@ _async_worker() {
 		local job=$cmd[1]
 
 		# If worker should perform unique jobs
-		if (( unique )); then
+		if (( !do_eval )) && (( unique )); then
 			# Check if a previous job is still running, if yes, let it finnish
 			for pid in ${${(v)jobstates##*:*:}%\=*}; do
 				if [[ ${storage[$job]} == $pid ]]; then

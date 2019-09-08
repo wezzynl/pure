@@ -335,9 +335,6 @@ prompt_pure_async_tasks() {
 		typeset -g prompt_pure_async_init=1
 	}
 
-	# Update the current working directory of the async worker.
-	async_worker_eval "prompt_pure" builtin cd -q $PWD
-
 	typeset -gA prompt_pure_vcs_info
 
 	local -H MATCH MBEGIN MEND
@@ -354,6 +351,9 @@ prompt_pure_async_tasks() {
 		prompt_pure_vcs_info[top]=
 	fi
 	unset MATCH MBEGIN MEND
+
+	# Update the current working directory of the async worker.
+	async_worker_eval "prompt_pure" builtin cd -q $PWD
 
 	async_job "prompt_pure" prompt_pure_async_vcs_info
 
