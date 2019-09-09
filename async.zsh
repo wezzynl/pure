@@ -165,7 +165,7 @@ _async_worker() {
 		case $request in
 			_unset_trap)  notify_parent=0; continue;;
 			_killjobs)    killjobs; continue;;
-			_async_eval*) do_eval=1; continue;;
+			_async_eval*) do_eval=1;;
 		esac
 
 		# Parse the request using shell parsing (z) to allow commands
