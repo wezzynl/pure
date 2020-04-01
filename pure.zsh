@@ -31,6 +31,22 @@ function check_last_exit_code() {
   fi
 }
 
+# Trim to prompt to my visual liking
+pure_prompt_dirtrim() {
+  [[ $1 -ge 1 ]] || set 2
+  local abbreviated_path
+  case $PWD in
+    $HOME) print -n '~' ;;  # For TrueOS
+    $HOME*)
+      abbreviated_path="$(print -Pn "%($(($1 + 2))~|~/.../%${1}~|%~)")"
+      ;;
+    *)
+      abbreviated_path="$(print -Pn "%($(($1 + 1))~|.../%${1}~|%~)")"
+      ;;
+  esac
+  print -n "$abbreviated_path"
+}
+
 +vi-git-stash() {
 	local -a stashes
 	stashes=$(git stash list 2>/dev/null | wc -l)
@@ -148,7 +164,7 @@ prompt_pure_preprompt_render() {
 	[[ -n $prompt_pure_state[username] ]] && preprompt_parts+=($prompt_pure_state[username])
 
 	# Set the path.
-	preprompt_parts+=('%F{${prompt_pure_colors[path]}}%~%f')
+	preprompt_parts+=('%F{${prompt_pure_colors[path]}}$(pure_prompt_dirtrim "$PURE_PROMPT_DIRTRIM")%f')
 
 	# Add Git branch and dirty status info.
 	typeset -gA prompt_pure_vcs_info
