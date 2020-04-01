@@ -24,6 +24,13 @@
 # \e[2K => clear everything on the current line
 
 
+function check_last_exit_code() {
+  local LAST_EXIT_CODE=$?
+  if [[ $LAST_EXIT_CODE -ne 0 ]]; then
+    echo "%F{$prompt_pure_colors[error_code]}-$LAST_EXIT_CODE-%f"
+  fi
+}
+
 +vi-git-stash() {
 	local -a stashes
 	stashes=$(git stash list 2>/dev/null | wc -l)
@@ -741,6 +748,7 @@ prompt_pure_setup() {
 	# Set the colors.
 	typeset -gA prompt_pure_colors_default prompt_pure_colors
 	prompt_pure_colors_default=(
+		error_code           red
 		execution_time       yellow
 		git:arrow            cyan
 		git:stash            cyan
@@ -781,6 +789,9 @@ prompt_pure_setup() {
 
 	# Indicate continuation prompt by … and use a darker color for it.
 	PROMPT2='%F{$prompt_pure_colors[prompt:continuation]}… %(1_.%_ .%_)%f'$prompt_indicator
+
+	# Add last exit code to right prompt
+	RPROMPT='$(check_last_exit_code)'
 
 	# Store prompt expansion symbols for in-place expansion via (%). For
 	# some reason it does not work without storing them in a variable first.
