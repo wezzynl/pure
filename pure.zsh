@@ -152,6 +152,8 @@ prompt_pure_set_colors() {
 prompt_pure_preprompt_render() {
 	setopt localoptions noshwordsplit
 
+	unset prompt_pure_async_render_requested
+
 	# Set color for Git branch/dirty status and change color if dirty checking has been delayed.
 	local git_color=$prompt_pure_colors[git:branch]
 	local git_dirty_color=$prompt_pure_colors[git:dirty]
@@ -160,27 +162,27 @@ prompt_pure_preprompt_render() {
 	# Initialize the preprompt array.
 	local -a preprompt_parts
 
-    # Username and machine, if applicable.
+	# Username and machine, if applicable.
 	[[ -n $prompt_pure_state[username] ]] && preprompt_parts+=($prompt_pure_state[username])
 
 	# Set the path.
 	preprompt_parts+=('%F{${prompt_pure_colors[path]}}${${(%):-$(pure_prompt_dirtrim "$PURE_PROMPT_DIRTRIM")}//\//%F{24\}/%f%F{blue\}}%f')
 
-	# Add Git branch and dirty status info.
+	# Git branch and dirty status info.
 	typeset -gA prompt_pure_vcs_info
 	if [[ -n $prompt_pure_vcs_info[branch] ]]; then
-		local branch="%F{$git_color}"'${prompt_pure_vcs_info[branch]}'
-		if [[ -n $prompt_pure_vcs_info[action] ]]; then
-			branch+="|%F{$prompt_pure_colors[git:action]}"'$prompt_pure_vcs_info[action]'"%F{$git_color}"
-		fi
-		preprompt_parts+=("$branch""%F{$git_dirty_color}"'${prompt_pure_git_dirty}%f')
+		preprompt_parts+=("%F{$git_color}"'${prompt_pure_vcs_info[branch]}'"%F{$git_dirty_color}"'${prompt_pure_git_dirty}%f')
+	fi
+	# Git action (for example, merge).
+	if [[ -n $prompt_pure_vcs_info[action] ]]; then
+		preprompt_parts+=("%F{$prompt_pure_colors[git:action]}"'$prompt_pure_vcs_info[action]%f')
 	fi
 	# Git pull/push arrows.
 	if [[ -n $prompt_pure_git_arrows ]]; then
 		preprompt_parts+=('%F{$prompt_pure_colors[git:arrow]}${prompt_pure_git_arrows}%f')
 	fi
 	# Git stash symbol (if opted in).
-	if [[ -n $prompt_pure_vcs_info[stash] ]]; then
+	if [[ -n $prompt_pure_git_stash ]]; then
 		preprompt_parts+=('%F{$prompt_pure_colors[git:stash]}${PURE_GIT_STASH_SYMBOL:-≡}%f')
 	fi
 
@@ -222,6 +224,8 @@ prompt_pure_preprompt_render() {
 }
 
 prompt_pure_precmd() {
+	setopt localoptions noshwordsplit
+
 	# Check execution time and store it in a variable.
 	prompt_pure_check_cmd_exec_time
 	unset prompt_pure_cmd_timestamp
@@ -290,14 +294,10 @@ prompt_pure_async_vcs_info() {
 	zstyle ':vcs_info:*' enable git
 	zstyle ':vcs_info:*' use-simple true
 	# Only export four message variables from `vcs_info`.
-	zstyle ':vcs_info:*' max-exports 4
-	# Export branch (%b), Git toplevel (%R), action (rebase/cherry-pick) (%a),
-	# and stash information via misc (%m).
-	zstyle ':vcs_info:git*' formats '%b' '%R' '%a' '%m'
-	zstyle ':vcs_info:git*' actionformats '%b' '%R' '%a' '%m'
-	if [[ $1 == 0 ]]; then
-		zstyle ':vcs_info:git*+set-message:*' hooks git-stash
-	fi
+	zstyle ':vcs_info:*' max-exports 3
+	# Export branch (%b), Git toplevel (%R), action (rebase/cherry-pick) (%a)
+	zstyle ':vcs_info:git*' formats '%b' '%R' '%a'
+	zstyle ':vcs_info:git*' actionformats '%b' '%R' '%a'
 
 	vcs_info
 
@@ -306,7 +306,6 @@ prompt_pure_async_vcs_info() {
 	info[branch]=$vcs_info_msg_0_
 	info[top]=$vcs_info_msg_1_
 	info[action]=$vcs_info_msg_2_
-	info[stash]=$vcs_info_msg_3_
 
 	print -r - ${(@kvq)info}
 }
@@ -388,6 +387,10 @@ prompt_pure_async_git_arrows() {
 	command git rev-list --left-right --count HEAD...@'{u}'
 }
 
+prompt_pure_async_git_stash() {
+	git rev-list --walk-reflogs --count refs/stash
+}
+
 # Try to lower the priority of the worker so that disk heavy operations
 # like `git status` has less impact on the system responsivity.
 prompt_pure_async_renice() {
@@ -402,16 +405,22 @@ prompt_pure_async_renice() {
 	fi
 }
 
+prompt_pure_async_init() {
+	typeset -g prompt_pure_async_inited
+	if ((${prompt_pure_async_inited:-0})); then
+		return
+	fi
+	prompt_pure_async_inited=1
+	async_start_worker "prompt_pure" -u -n
+	async_register_callback "prompt_pure" prompt_pure_async_callback
+	async_worker_eval "prompt_pure" prompt_pure_async_renice
+}
+
 prompt_pure_async_tasks() {
 	setopt localoptions noshwordsplit
 
 	# Initialize the async worker.
-	((!${prompt_pure_async_init:-0})) && {
-		async_start_worker "prompt_pure" -u -n
-		async_register_callback "prompt_pure" prompt_pure_async_callback
-		typeset -g prompt_pure_async_init=1
-		async_job "prompt_pure" prompt_pure_async_renice
-	}
+	prompt_pure_async_init
 
 	# Update the current working directory of the async worker.
 	async_worker_eval "prompt_pure" builtin cd -q $PWD
@@ -431,12 +440,10 @@ prompt_pure_async_tasks() {
 		unset prompt_pure_git_fetch_pattern
 		prompt_pure_vcs_info[branch]=
 		prompt_pure_vcs_info[top]=
-		prompt_pure_vcs_info[stash]=
 	fi
 	unset MATCH MBEGIN MEND
 
-	zstyle -t ":prompt:pure:git:stash" show
-	async_job "prompt_pure" prompt_pure_async_vcs_info $?
+	async_job "prompt_pure" prompt_pure_async_vcs_info
 
 	# Only perform tasks inside a Git working tree.
 	[[ -n $prompt_pure_vcs_info[top] ]] || return
@@ -470,6 +477,13 @@ prompt_pure_async_refresh() {
 		# Check check if there is anything to pull.
 		async_job "prompt_pure" prompt_pure_async_git_dirty ${PURE_GIT_UNTRACKED_DIRTY:-1}
 	fi
+
+	# If stash is enabled, tell async worker to count stashes
+	if zstyle -t ":prompt:pure:git:stash" show; then
+		async_job "prompt_pure" prompt_pure_async_git_stash
+	else
+		unset prompt_pure_git_stash
+	fi
 }
 
 prompt_pure_check_git_arrows() {
@@ -490,10 +504,27 @@ prompt_pure_async_callback() {
 
 	case $job in
 		\[async])
-			# Code is 1 for corrupted worker output and 2 for dead worker.
-			if [[ $code -eq 2 ]]; then
-				# Our worker died unexpectedly.
-				typeset -g prompt_pure_async_init=0
+			# Handle all the errors that could indicate a crashed
+			# async worker. See zsh-async documentation for the
+			# definition of the exit codes.
+			if (( code == 2 )) || (( code == 3 )) || (( code == 130 )); then
+				# Our worker died unexpectedly, try to recover immediately.
+				# TODO(mafredri): Do we need to handle next_pending
+				#                 and defer the restart?
+				typeset -g prompt_pure_async_inited=0
+				async_stop_worker prompt_pure
+				prompt_pure_async_init   # Reinit the worker.
+				prompt_pure_async_tasks  # Restart all tasks.
+
+				# Reset render state due to restart.
+				unset prompt_pure_async_render_requested
+			fi
+			;;
+		\[async/eval])
+			if (( code )); then
+				# Looks like async_worker_eval failed,
+				# rerun async tasks just in case.
+				prompt_pure_async_tasks
 			fi
 			;;
 		prompt_pure_async_vcs_info)
@@ -528,7 +559,6 @@ prompt_pure_async_callback() {
 			prompt_pure_vcs_info[branch]=$info[branch]
 			prompt_pure_vcs_info[top]=$info[top]
 			prompt_pure_vcs_info[action]=$info[action]
-			prompt_pure_vcs_info[stash]=$info[stash]
 
 			do_render=1
 			;;
@@ -586,7 +616,10 @@ prompt_pure_async_callback() {
 					;;
 			esac
 			;;
-		prompt_pure_async_renice)
+		prompt_pure_async_git_stash)
+			local prev_stash=$prompt_pure_git_stash
+			typeset -g prompt_pure_git_stash=$output
+			[[ $prev_stash != $prompt_pure_git_stash ]] && do_render=1
 			;;
 	esac
 
@@ -770,7 +803,7 @@ prompt_pure_setup() {
 		git:stash            cyan
 		git:branch           242
 		git:branch:cached    red
-		git:action           242
+		git:action           yellow
 		git:dirty            218
 		host                 242
 		path                 blue
