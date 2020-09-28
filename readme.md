@@ -12,20 +12,15 @@
 	<p>
 		<p>
 			<sup>
-				<a href="https://github.com/sponsors/sindresorhus">Sindre's open source work is supported by the community</a>
+				<a href="https://github.com/sponsors/sindresorhus">Sindre Sorhus' open source work is supported by the community</a>
 			</sup>
 		</p>
 		<sup>Special thanks to:</sup>
 		<br>
 		<br>
-		<a href="https://github.com/botpress/botpress">
-			<img src="https://sindresorhus.com/assets/thanks/botpress-logo.svg" width="260" alt="Botpress">
+		<a href="https://standardresume.co">
+			<img src="https://sindresorhus.com/assets/thanks/standard-resume-logo.svg" width="200"/>
 		</a>
-		<br>
-		<sub><b>Botpress is an open-source conversational assistant creation platform.</b></sub>
-		<br>
-		<sub>They <a href="https://github.com/botpress/botpress/blob/master/.github/CONTRIBUTING.md">welcome contributions</a> from anyone, whether you're into machine learning,<br>want to get started in open-source, or just have an improvement idea.</sub>
-		<br>
 	</p>
 </div>
 
@@ -35,7 +30,7 @@
 
 ## Overview
 
-Most prompts are cluttered, ugly and slow. I wanted something visually pleasing that stayed out of my way.
+Most prompts are cluttered, ugly and slow. We wanted something visually pleasing that stayed out of our way.
 
 ### Why?
 
@@ -45,15 +40,14 @@ Most prompts are cluttered, ugly and slow. I wanted something visually pleasing 
 - Indicates when you have unpushed/unpulled `git` commits with up/down arrows. *(Check is done asynchronously!)*
 - Prompt character turns red if the last command didn't exit with `0`.
 - Command execution time will be displayed if it exceeds the set threshold.
-- Username and host only displayed when in an SSH session.
+- Username and host only displayed when in an SSH session or a container.
 - Shows the current path in the title and the [current folder & command](screenshot-title-cmd.png) when a process is running.
 - Support VI-mode indication by reverse prompt symbol (Zsh 5.3+).
 - Makes an excellent starting point for your own custom prompt.
 
-
 ## Install
 
-Can be installed with `npm` or manually. Requires Git 2.0.0+ and ZSH 5.2+. Older versions of ZSH are known to work, but they are **not** recommended.
+Can be installed with `npm` or manually. Requires Git 2.15.2+ and ZSH 5.2+. Older versions of ZSH are known to work, but they are **not** recommended.
 
 ### npm
 
@@ -87,7 +81,6 @@ Initialize the prompt system (if not so already) and choose `pure`:
 autoload -U promptinit; promptinit
 prompt pure
 ```
-
 
 ## Options
 
@@ -134,18 +127,19 @@ Colors can be changed by using [`zstyle`](http://zsh.sourceforge.net/Doc/Release
 The following diagram shows where each color is applied on the prompt:
 
 ```
-┌───────────────────────────────────────────── path
-│          ┌────────────────────────────────── git:branch
-│          │      ┌─────────────────────────── git:action
-│          │      │       ┌─────────────────── git:dirty
-│          │      │       │ ┌───────────────── git:arrow
-│          │      │       │ │ ┌─────────────── git:stash
-│          │      │       │ │ │        ┌────── host
-│          │      │       │ │ │        │
-~/dev/pure master|rebase-i* ⇡ ≡ zaphod@heartofgold 42s
-venv ❯                        │                  │
-│    │                        │                  └───── execution_time
-│    │                        └──────────────────────── user
+┌────────────────────────────────────────────────────── user
+│      ┌─────────────────────────────────────────────── host
+│      │           ┌─────────────────────────────────── path
+│      │           │          ┌──────────────────────── git:branch
+│      │           │          │     ┌────────────────── git:dirty
+│      │           │          │     │ ┌──────────────── git:action
+│      │           │          │     │ │        ┌─────── git:arrow
+│      │           │          │     │ │        │ ┌───── git:stash
+│      │           │          │     │ │        │ │ ┌─── execution_time
+│      │           │          │     │ │        │ │ │
+zaphod@heartofgold ~/dev/pure master* rebase-i ⇡ ≡ 42s
+venv ❯
+│    │
 │    └───────────────────────────────────────────────── prompt
 └────────────────────────────────────────────────────── virtualenv (or prompt:continuation)
 ```
@@ -161,7 +155,6 @@ If you can't use such terminal, the module [`zsh/nearcolor`](http://zsh.sourcefo
 zmodload zsh/nearcolor
 zstyle :prompt:pure:path color '#FF0000'
 ```
-
 
 ## Example
 
@@ -185,7 +178,6 @@ zstyle :prompt:pure:git:stash show yes
 prompt pure
 ```
 
-
 ## Tips
 
 In the screenshot you see Pure running in [Hyper](https://hyper.is) with the [hyper-snazzy](https://github.com/sindresorhus/hyper-snazzy) theme and Menlo font.
@@ -194,7 +186,6 @@ The [Tomorrow Night Eighties](https://github.com/chriskempson/tomorrow-theme) th
 *Just make sure you have anti-aliasing enabled in your terminal.*
 
 To have commands colorized as seen in the screenshot, install [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting).
-
 
 ## Integration
 
@@ -252,19 +243,18 @@ zinit ice compile'(pure|async).zsh' pick'async.zsh' src'pure.zsh'
 zinit light sindresorhus/pure
 ```
 
-
 ## FAQ
 
 There are currently no FAQs.
 
 See [FAQ Archive](https://github.com/sindresorhus/pure/wiki/FAQ-Archive) for previous FAQs.
 
-
 ## Ports
 
 - **ZSH**
 	- [therealklanni/purity](https://github.com/therealklanni/purity) - More compact current working directory, important details on the main prompt line, and extra Git indicators.
  	- [intelfx/pure](https://github.com/intelfx/pure) - Solarized-friendly colors, highly verbose, and fully async Git integration.
+	- [forivall/pure](https://github.com/forivall/pure) - A minimal fork which highlights the Git repo's root directory in the path.
 	- [dfurnes/purer](https://github.com/dfurnes/purer) - Compact single-line prompt with built-in Vim-mode indicator.
 	- [chabou/pure-now](https://github.com/chabou/pure-now) - Fork with [Now](https://zeit.co/now) support.
 	- [pure10k](https://gist.github.com/romkatv/7cbab80dcbc639003066bb68b9ae0bbf) - Configuration file for [Powerlevel10k](https://github.com/romkatv/powerlevel10k/) that makes it look like Pure.
@@ -280,9 +270,8 @@ See [FAQ Archive](https://github.com/sindresorhus/pure/wiki/FAQ-Archive) for pre
 - **PowerShell**
 	- [nickcox/pure-pwsh](https://github.com/nickcox/pure-pwsh/) - PowerShell/PS Core implementation of the Pure prompt.
 
-
 ## Team
 
-[![Sindre Sorhus](https://github.com/sindresorhus.png?size=100)](http://sindresorhus.com) | [![Mathias Fredriksson](https://github.com/mafredri.png?size=100)](https://github.com/mafredri)
+[![Sindre Sorhus](https://github.com/sindresorhus.png?size=100)](https://sindresorhus.com) | [![Mathias Fredriksson](https://github.com/mafredri.png?size=100)](https://github.com/mafredri)
 ---|---
 [Sindre Sorhus](https://github.com/sindresorhus) | [Mathias Fredriksson](https://github.com/mafredri)
