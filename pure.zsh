@@ -222,6 +222,9 @@ prompt_pure_precmd() {
 		export VIRTUAL_ENV_DISABLE_PROMPT=12
 	fi
 
+	psvar[14]="${ZSH_KUBECTL_CONTEXT}"
+	psvar[15]="${ZSH_KUBECTL_NAMESPACE}"
+
 	# Make sure VIM prompt is reset.
 	prompt_pure_reset_prompt_symbol
 
@@ -800,6 +803,8 @@ prompt_pure_setup() {
 		user                 242
 		user:root            default
 		virtualenv           242
+		kubernetes:context   23
+		kubernetes:namespace 237
 	)
 	prompt_pure_colors=("${(@kv)prompt_pure_colors_default}")
 
@@ -818,6 +823,10 @@ prompt_pure_setup() {
 
 	# If a virtualenv is activated, display it in grey.
 	PROMPT='%(12V.%F{$prompt_pure_colors[virtualenv]}%12v%f .)'
+
+  # If a kube context is available, display it.
+	RPROMPT='%(14V.%F{$prompt_pure_colors[kubernetes:context]}%14v%f .)'
+	RPROMPT+='%(15V.%F{$prompt_pure_colors[kubernetes:namespace]}%15v%f .)'
 
 	# Prompt turns red if the previous command didn't exit with 0.
 	local prompt_indicator='%(?.%F{$prompt_pure_colors[prompt:success]}.%F{$prompt_pure_colors[prompt:error]})${prompt_pure_state[prompt]}%f '
